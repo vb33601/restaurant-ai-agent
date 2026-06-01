@@ -9,7 +9,10 @@ class RestaurantAIAgent {
         this.currentOrder = null;
         this.userRequest = null;
         this.currentLocation = 'Whitefield';
-        this.apiUrl = window.location.origin.includes('localhost') ? 'http://localhost:5005' : window.location.origin;
+        // For localtunnel, we need to use the same origin
+        // But the API runs on a different port locally
+        // For tunnel, we need to use the tunnel URL + API endpoints
+        this.apiUrl = window.location.origin;
     }
 
     // Fetch real restaurants from backend API
