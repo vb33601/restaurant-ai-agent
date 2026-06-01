@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍽️ AI Restaurant Agent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        
+        .message.user {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .message.bot {
+            background: white;
+            color: #333;
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .message.bot pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .input-container input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .input-container input:focus {
+            border-color: #667eea;
+        }
+        
+        .input-container button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: transform 0.2s;
+        }
+        
+        .input-container button:hover {
+            transform: scale(1.05);
+        }
+        
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 18px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            width: fit-content;
+        }
+        
+        .typing-indicator.active {
+            display: block;
+        }
+        
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+            margin: 0 2px;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+        
+        .restaurant-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .restaurant-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .restaurant-card h3 {
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+        
+        .restaurant-card .rating {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        
+        .restaurant-card .details {
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .quick-actions button {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .quick-actions button:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .welcome-message {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .welcome-message h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .welcome-message p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .example-queries {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 20px;
+        }
+        
+        .example-queries button {
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+        
+        .example-queries button:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .menu-item {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .menu-item:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .menu-item .item-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .menu-item .item-price {
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .menu-item:hover .item-price {
+            color: white;
+        }
+        
+        .show-more-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: all 0.2s;
+        }
+        
+        .show-more-btn:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+        
+        .restaurant-link {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+        
+        .restaurant-link:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                height: 100vh;
+                border-radius: 0;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ AI Restaurant Agent</h1>
+            <p>Your intelligent food ordering assistant</p>
+        </div>
+        
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-message">
+                <h2>Welcome! 👋</h2>
+                <p>I find <strong>real restaurants</strong> anywhere in India using live OpenStreetMap data.</p>
+                <ul style="list-style: none; margin: 15px 0;">
+                    <li>🗺️ Live data for any Indian city or area</li>
+                    <li>🍽️ Search by cuisine, location or city</li>
+                    <li>🛵 Direct links to Swiggy, Zomato &amp; UberEats</li>
+                    <li>🌐 Official restaurant websites where available</li>
+                    <li>📞 Phone numbers &amp; addresses</li>
+                </ul>
+                
+                <div class="example-queries">
+                    <p><strong>Try asking:</strong></p>
+                    <button onclick="sendExample('restaurants in Whitefield')">
+                        📍 "restaurants in Whitefield"
+                    </button>
+                    <button onclick="sendExample('Best biryani in Hyderabad')">
+                        🍗 "Best biryani in Hyderabad"
+                    </button>
+                    <button onclick="sendExample('Pizza places in Mumbai')">
+                        🍕 "Pizza places in Mumbai"
+                    </button>
+                    <button onclick="sendExample('South Indian food in Koramangala')">
+                        🥗 "South Indian food in Koramangala"
+                    </button>
+                    <button onclick="sendExample('Top restaurants in Chennai')">
+                        🌆 "Top restaurants in Chennai"
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="typing-indicator" id="typingIndicator">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="Type your request..." 
+                   onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script src="/static/app.js?v=3"></script>
+    <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        const typingIndicator = document.getElementById('typingIndicator');
+        
+        // Initialize client-side AI agent
+        const agent = new RestaurantAIAgent();
+        
+        function addMessage(text, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+
+            // Convert markdown-like formatting to HTML
+            let formattedText = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                // Convert [text](url) markdown links to clickable HTML anchors
+                .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
+                    '<a href="$2" target="_blank" rel="noopener" style="color:#667eea;font-weight:bold;text-decoration:none;">$1 ↗</a>')
+                .replace(/\n/g, '<br>');
+
+            messageDiv.innerHTML = formattedText;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function showTyping() {
+            typingIndicator.classList.add('active');
+            chatContainer.appendChild(typingIndicator);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function hideTyping() {
+            typingIndicator.classList.remove('active');
+        }
+        
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, true);
+            userInput.value = '';
+            showTyping();
+
+            try {
+                const response = await agent.processCommand(message);
+                hideTyping();
+
+                if (response && (response.includes('🟢') || response.includes('🔴'))) {
+                    formatMenuResponse(response);
+                } else {
+                    addMessage(response || '❌ No response received.');
+                }
+            } catch (err) {
+                hideTyping();
+                addMessage('❌ Something went wrong. Please try again.');
+                console.error(err);
+            }
+        }
+        
+        function formatMenuResponse(text) {
+            const lines = text.split('\n');
+            let html = '<div class="menu-list">';
+            let currentRestaurant = 'Restaurant';
+            let itemCount = 0;
+            const itemsPerPage = 5;
+            let allItems = [];
+            
+            // Extract restaurant name
+            const restaurantMatch = text.match(/\*\*Full Menu - (.+?)\*\*/);
+            if (restaurantMatch) currentRestaurant = restaurantMatch[1];
+            
+            // Extract all items
+            lines.forEach(line => {
+                const match = line.match(/[🟢🔴]\s*([^-₹]+)[-₹\s]*₹?(\d+)/);
+                if (match) {
+                    allItems.push({
+                        name: match[1].trim(),
+                        price: parseInt(match[2]),
+                        is_veg: line.includes('🟢'),
+                        description: ''
+                    });
+                }
+            });
+            
+            // Show first page
+            const pageItems = allItems.slice(0, itemsPerPage);
+            pageItems.forEach((item, index) => {
+                const vegIndicator = item.is_veg ? '🟢' : '🔴';
+                const searchQuery = encodeURIComponent(item.name + ' ' + currentRestaurant + ' order online');
+                html += `
+                    <div class="menu-item" onclick="window.open('https://www.google.com/search?q=${searchQuery}', '_blank')">
+                        <div class="item-name">${vegIndicator} ${index + 1}. ${item.name}</div>
+                        <div class="item-price">₹${item.price}</div>
+                        <div style="font-size: 11px; color: #667eea; margin-top: 4px;">👆 Tap to search & order</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            // Add Show More button if there are more items
+            if (allItems.length > itemsPerPage) {
+                html += `<button class="show-more-btn" onclick="showMoreItems(${itemsPerPage}, '${currentRestaurant}', ${JSON.stringify(allItems).replace(/"/g, '&quot;')})">📋 Show More Items (${itemsPerPage}/${allItems.length})</button>`;
+            }
+            
+            // Add restaurant links
+            const restaurantQuery = encodeURIComponent(currentRestaurant);
+            html += `<div style="margin-top: 15px; text-align: center;">
+                <p><strong>🛒 Order ${currentRestaurant} from:</strong></p>
+                <a href="https://www.swiggy.com/search?query=${restaurantQuery}" class="restaurant-link" target="_blank">🛵 Swiggy</a>
+                <a href="https://www.zomato.com/search?q=${restaurantQuery}" class="restaurant-link" target="_blank">🍽️ Zomato</a>
+                <a href="https://www.ubereats.com" class="restaurant-link" target="_blank">🚗 UberEats</a>
+                <a href="https://www.google.com/search?q=${restaurantQuery}+food+delivery" class="restaurant-link" target="_blank">🔍 Google</a>
+            </div>`;
+            
+            addMessage(html);
+        }
+        
+        function showMoreItems(startIndex, restaurantName, items) {
+            const itemsPerPage = 5;
+            const pageItems = items.slice(startIndex, startIndex + itemsPerPage);
+            
+            let html = '<div class="menu-list">';
+            pageItems.forEach((item, index) => {
+                const vegIndicator = item.is_veg ? '🟢' : '🔴';
+                const globalIndex = startIndex + index + 1;
+                const searchQuery = encodeURIComponent(item.name + ' ' + restaurantName + ' order online');
+                html += `
+                    <div class="menu-item" onclick="window.open('https://www.google.com/search?q=${searchQuery}', '_blank')">
+                        <div class="item-name">${vegIndicator} ${globalIndex}. ${item.name}</div>
+                        <div class="item-price">₹${item.price}</div>
+                        <div style="font-size: 11px; color: #667eea; margin-top: 4px;">👆 Tap to search & order</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            // Add Show More button if there are more items
+            if (startIndex + itemsPerPage < items.length) {
+                html += `<button class="show-more-btn" onclick="showMoreItems(${startIndex + itemsPerPage}, '${restaurantName}', ${JSON.stringify(items).replace(/"/g, '&quot;')})">📋 Show More Items (${startIndex + itemsPerPage}/${items.length})</button>`;
+            }
+            
+            addMessage(html);
+        }
+        
+        function sendExample(text) {
+            userInput.value = text;
+            sendMessage();
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        // Focus input on load
+        userInput.focus();
+    </script>
+</body>
+</html>
