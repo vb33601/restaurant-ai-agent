@@ -9,7 +9,7 @@ class RestaurantAIAgent {
         this.currentOrder = null;
         this.userRequest = null;
         this.currentLocation = 'Whitefield';
-        this.apiUrl = 'https://restaurant-ai-agent-api.onrender.com';
+        this.apiUrl = 'http://localhost:5002';
     }
 
     // Fetch real restaurants from backend API
