@@ -9,17 +9,21 @@ class RestaurantAIAgent {
         this.currentOrder = null;
         this.userRequest = null;
         this.currentLocation = 'Whitefield';
-        this.apiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; // Replace with actual API key
+        this.apiKey = 'AIzaSyAC5IHV44MD0072bkbgep8kREcWG-AK1yE';
     }
 
     // Fetch real restaurants from Google Maps API
     async fetchRealRestaurants(location, cuisine) {
         try {
-            // For demo, we'll use a simulated API call
-            // In production, replace with actual Google Maps API
-            const response = await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${cuisine}+restaurants+in+${location}&key=${this.apiKey}`);
+            const query = cuisine ? `${cuisine}+restaurants+in+${location}` : `restaurants+in+${location}`;
+            const response = await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=${this.apiKey}`);
             const data = await response.json();
-            return this.processGooglePlacesData(data.results);
+            
+            if (data.results && data.results.length > 0) {
+                return this.processGooglePlacesData(data.results);
+            } else {
+                return this.getFallbackRestaurants(location, cuisine);
+            }
         } catch (error) {
             console.error('Error fetching restaurants:', error);
             return this.getFallbackRestaurants(location, cuisine);
