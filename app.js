@@ -1,5 +1,5 @@
 // Client-side Restaurant AI Agent with Real Data
-// Uses real restaurant data from Google Maps API
+// Uses real restaurant data from Swiggy/Zomato APIs
 
 class RestaurantAIAgent {
     constructor() {
@@ -9,102 +9,157 @@ class RestaurantAIAgent {
         this.currentOrder = null;
         this.userRequest = null;
         this.currentLocation = 'Whitefield';
-        this.apiKey = 'AIzaSyAC5IHV44MD0072bkbgep8kREcWG-AK1yE';
     }
 
-    // Fetch real restaurants from Google Maps API
+    // Fetch real restaurants from Swiggy API
     async fetchRealRestaurants(location, cuisine) {
         try {
-            const query = cuisine ? `${cuisine}+restaurants+in+${location}` : `restaurants+in+${location}`;
-            const response = await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=${this.apiKey}`);
+            // Use a CORS proxy or direct API
+            const response = await fetch(`https://www.swiggy.com/dapi/restaurants/list/v5?lat=12.9716&lng=77.5946&page_type=DESKTOP_WEB_LISTING`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                }
+            });
             const data = await response.json();
-            
-            if (data.results && data.results.length > 0) {
-                return this.processGooglePlacesData(data.results);
-            } else {
-                return this.getFallbackRestaurants(location, cuisine);
-            }
+            return this.processSwiggyData(data.data?.cards || []);
         } catch (error) {
-            console.error('Error fetching restaurants:', error);
-            return this.getFallbackRestaurants(location, cuisine);
+            console.error('Error fetching from Swiggy:', error);
+            // Try Zomato
+            return this.fetchFromZomato(location, cuisine);
         }
     }
 
-    // Process Google Places data
-    processGooglePlacesData(places) {
-        return places.map(place => ({
-            id: place.place_id,
-            name: place.name,
-            cuisine: this.detectCuisine(place.types),
-            rating: place.rating || 4.0,
-            review_count: place.user_ratings_total || 100,
-            price_range: this.convertPriceLevel(place.price_level),
-            delivery_time: Math.floor(Math.random() * 30) + 15,
-            address: place.formatted_address,
-            phone: place.formatted_phone_number || 'N/A',
-            tags: place.types || ['restaurant'],
-            menu: this.generateMenuFromCuisine(this.detectCuisine(place.types))
-        }));
-    }
-
-    // Detect cuisine from Google Places types
-    detectCuisine(types) {
-        const cuisineMap = {
-            'indian_restaurant': 'Indian',
-            'chinese_restaurant': 'Chinese',
-            'italian_restaurant': 'Italian',
-            'mexican_restaurant': 'Mexican',
-            'thai_restaurant': 'Thai',
-            'japanese_restaurant': 'Japanese',
-            'american_restaurant': 'American',
-            'fast_food_restaurant': 'Fast Food'
-        };
-        
-        for (const [type, cuisine] of Object.entries(cuisineMap)) {
-            if (types.includes(type)) return cuisine;
+    // Fetch from Zomato API
+    async fetchFromZomato(location, cuisine) {
+        try {
+            const response = await fetch(`https://www.zomato.com/webroutes/search/home?q=${cuisine}+${location}`, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+            return this.processZomatoData(data);
+        } catch (error) {
+            console.error('Error fetching from Zomato:', error);
+            return [];
         }
-        return 'Multi-Cuisine';
     }
 
-    // Convert Google price level to symbols
-    convertPriceLevel(level) {
-        if (!level) return '₹';
-        return '₹'.repeat(level);
+    // Process Swiggy data
+    processSwiggyData(cards) {
+        const restaurants = [];
+        cards.forEach(card => {
+            if (card.card?.card?.gridElements?.infoWithStyle?.restaurants) {
+                card.card.card.gridElements.infoWithStyle.restaurants.forEach(rest => {
+                    restaurants.push({
+                        id: rest.info.id,
+                        name: rest.info.name,
+                        cuisine: rest.info.cuisines?.join(', ') || 'Multi-Cuisine',
+                        rating: rest.info.avgRating || 4.0,
+                        review_count: rest.info.totalRatingsString || '100+',
+                        price_range: rest.info.costForTwo || '₹200 for two',
+                        delivery_time: rest.info.sla?.deliveryTime || 30,
+                        address: rest.info.locality || 'Bangalore',
+                        phone: rest.info.phone || 'N/A',
+                        tags: rest.info.cuisines || ['restaurant'],
+                        menu: this.generateMenuFromCuisine(rest.info.cuisines?.[0] || 'Indian')
+                    });
+                });
+            }
+        });
+        return restaurants;
+    }
+
+    // Process Zomato data
+    processZomatoData(data) {
+        const restaurants = [];
+        if (data.results?.restaurants) {
+            data.results.restaurants.forEach(rest => {
+                restaurants.push({
+                    id: rest.restaurant.id,
+                    name: rest.restaurant.name,
+                    cuisine: rest.restaurant.cuisines,
+                    rating: rest.restaurant.user_rating?.aggregate_rating || 4.0,
+                    review_count: rest.restaurant.user_rating?.votes || 100,
+                    price_range: rest.restaurant.price_range || '₹₹',
+                    delivery_time: rest.restaurant.average_delivery_time || 30,
+                    address: rest.restaurant.location?.address || 'Bangalore',
+                    phone: rest.restaurant.phone_numbers || 'N/A',
+                    tags: rest.restaurant.cuisines?.split(', ') || ['restaurant'],
+                    menu: this.generateMenuFromCuisine(rest.restaurant.cuisines?.split(', ')[0] || 'Indian')
+                });
+            });
+        }
+        return restaurants;
     }
 
     // Generate menu based on cuisine
     generateMenuFromCuisine(cuisine) {
-        const menus = {
+        const menuMap = {
             'Indian': [
                 { name: 'Butter Chicken', price: 280, is_veg: false, popularity: 0.95 },
                 { name: 'Paneer Tikka', price: 220, is_veg: true, popularity: 0.90 },
                 { name: 'Naan', price: 40, is_veg: true, popularity: 0.85 },
                 { name: 'Biryani', price: 250, is_veg: false, popularity: 0.95 },
-                { name: 'Dal Makhani', price: 180, is_veg: true, popularity: 0.80 }
+                { name: 'Dal Makhani', price: 180, is_veg: true, popularity: 0.80 },
+                { name: 'Tandoori Roti', price: 30, is_veg: true, popularity: 0.75 },
+                { name: 'Chicken Tikka', price: 260, is_veg: false, popularity: 0.90 },
+                { name: 'Gulab Jamun', price: 60, is_veg: true, popularity: 0.85 }
+            ],
+            'South Indian': [
+                { name: 'Masala Dosa', price: 80, is_veg: true, popularity: 0.95 },
+                { name: 'Idli Sambar', price: 60, is_veg: true, popularity: 0.90 },
+                { name: 'Vada', price: 50, is_veg: true, popularity: 0.85 },
+                { name: 'Uttapam', price: 70, is_veg: true, popularity: 0.80 },
+                { name: 'Filter Coffee', price: 30, is_veg: true, popularity: 0.95 },
+                { name: 'Rava Dosa', price: 85, is_veg: true, popularity: 0.75 },
+                { name: 'Pongal', price: 65, is_veg: true, popularity: 0.70 },
+                { name: 'Kesari Bath', price: 55, is_veg: true, popularity: 0.65 }
             ],
             'Chinese': [
                 { name: 'Kung Pao Chicken', price: 220, is_veg: false, popularity: 0.90 },
                 { name: 'Veg Hakka Noodles', price: 160, is_veg: true, popularity: 0.85 },
                 { name: 'Spring Rolls', price: 120, is_veg: true, popularity: 0.80 },
                 { name: 'Manchurian', price: 180, is_veg: true, popularity: 0.85 },
-                { name: 'Fried Rice', price: 140, is_veg: true, popularity: 0.90 }
+                { name: 'Fried Rice', price: 140, is_veg: true, popularity: 0.90 },
+                { name: 'Chilli Chicken', price: 200, is_veg: false, popularity: 0.88 },
+                { name: 'Dim Sum', price: 150, is_veg: true, popularity: 0.75 },
+                { name: 'Hot and Sour Soup', price: 90, is_veg: true, popularity: 0.80 }
             ],
             'Italian': [
                 { name: 'Margherita Pizza', price: 280, is_veg: true, popularity: 0.95 },
                 { name: 'Pasta Alfredo', price: 240, is_veg: true, popularity: 0.90 },
                 { name: 'Garlic Bread', price: 80, is_veg: true, popularity: 0.85 },
                 { name: 'Tiramisu', price: 180, is_veg: true, popularity: 0.80 },
-                { name: 'Lasagna', price: 260, is_veg: false, popularity: 0.85 }
+                { name: 'Lasagna', price: 260, is_veg: false, popularity: 0.85 },
+                { name: 'Bruschetta', price: 120, is_veg: true, popularity: 0.75 },
+                { name: 'Risotto', price: 220, is_veg: true, popularity: 0.80 },
+                { name: 'Panna Cotta', price: 150, is_veg: true, popularity: 0.85 }
+            ],
+            'Biryani': [
+                { name: 'Chicken Biryani', price: 250, is_veg: false, popularity: 0.95 },
+                { name: 'Mutton Biryani', price: 350, is_veg: false, popularity: 0.90 },
+                { name: 'Veg Biryani', price: 200, is_veg: true, popularity: 0.80 },
+                { name: 'Egg Biryani', price: 180, is_veg: false, popularity: 0.85 },
+                { name: 'Hyderabadi Biryani', price: 280, is_veg: false, popularity: 0.92 },
+                { name: 'Raita', price: 50, is_veg: true, popularity: 0.80 },
+                { name: 'Salan', price: 80, is_veg: true, popularity: 0.75 },
+                { name: 'Double Ka Meetha', price: 70, is_veg: true, popularity: 0.85 }
+            ],
+            'Fast Food': [
+                { name: 'Burger', price: 150, is_veg: true, popularity: 0.90 },
+                { name: 'Fries', price: 80, is_veg: true, popularity: 0.85 },
+                { name: 'Pizza', price: 200, is_veg: true, popularity: 0.92 },
+                { name: 'Sandwich', price: 120, is_veg: true, popularity: 0.80 },
+                { name: 'Hot Dog', price: 100, is_veg: false, popularity: 0.75 },
+                { name: 'Nuggets', price: 130, is_veg: false, popularity: 0.85 },
+                { name: 'Milkshake', price: 90, is_veg: true, popularity: 0.88 },
+                { name: 'Ice Cream', price: 60, is_veg: true, popularity: 0.90 }
             ]
         };
         
-        return menus[cuisine] || menus['Indian'];
-    }
-
-    // Fallback restaurants when API fails
-    getFallbackRestaurants(location, cuisine) {
-        // This will be replaced with actual API data
-        return [];
+        return menuMap[cuisine] || menuMap['Indian'];
     }
 
     parseRequest(text) {
@@ -163,8 +218,8 @@ class RestaurantAIAgent {
     }
 
     async searchRestaurants(request) {
-        // Fetch real restaurants from API
-        const restaurants = await this.fetchRealRestaurants(request.location, request.cuisine);
+        // Fetch real restaurants from APIs
+        let restaurants = await this.fetchRealRestaurants(request.location, request.cuisine);
         
         if (restaurants.length === 0) {
             return [];
@@ -237,7 +292,9 @@ class RestaurantAIAgent {
         this.currentRestaurants = await this.searchRestaurants(this.userRequest);
         
         if (this.currentRestaurants.length === 0) {
-            return `❌ Sorry, I couldn't find any restaurants in ${this.currentLocation}. Please try:
+            return `❌ Sorry, I couldn't find any restaurants in ${this.currentLocation}. 
+
+Please try:
 • Different location
 • Different cuisine
 • Without budget filter
