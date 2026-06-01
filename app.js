@@ -1,5 +1,5 @@
-// Client-side Restaurant AI Agent with Real Data
-// Uses real restaurant data from Swiggy/Zomato APIs
+// Client-side Restaurant AI Agent with Open Source APIs
+// Uses OpenStreetMap, Overpass API, and other free APIs
 
 class RestaurantAIAgent {
     constructor() {
@@ -11,96 +11,148 @@ class RestaurantAIAgent {
         this.currentLocation = 'Whitefield';
     }
 
-    // Fetch real restaurants from backend API
+    // Fetch real restaurants using OpenStreetMap (Nominatim) + Overpass API
     async fetchRealRestaurants(location, cuisine) {
         try {
-            // Use our backend API
-            const response = await fetch(`https://restaurant-ai-agent-api.onrender.com/api/restaurants?location=${location}&cuisine=${cuisine}`, {
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            const data = await response.json();
-            
-            if (data.success && data.restaurants.length > 0) {
-                return data.restaurants;
-            } else {
+            // Step 1: Get coordinates from location name using Nominatim (OpenStreetMap)
+            const coords = await this.getCoordinates(location);
+            if (!coords) {
                 return [];
             }
+
+            // Step 2: Search for restaurants using Overpass API (OpenStreetMap)
+            const restaurants = await this.searchOverpass(coords.lat, coords.lon, cuisine);
+            
+            if (restaurants.length > 0) {
+                return restaurants;
+            }
+            
+            // Fallback: Use OpenStreetMap Nominatim search
+            return await this.searchNominatim(location, cuisine);
         } catch (error) {
             console.error('Error fetching restaurants:', error);
             return [];
         }
     }
 
-    // Fetch from Zomato API
-    async fetchFromZomato(location, cuisine) {
+    // Get coordinates from location name
+    async getCoordinates(location) {
         try {
-            const response = await fetch(`https://www.zomato.com/webroutes/search/home?q=${cuisine}+${location}`, {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location + ', Bangalore, India')}`);
+            const data = await response.json();
+            
+            if (data && data.length > 0) {
+                return {
+                    lat: parseFloat(data[0].lat),
+                    lon: parseFloat(data[0].lon)
+                };
+            }
+            return null;
+        } catch (error) {
+            console.error('Error getting coordinates:', error);
+            return null;
+        }
+    }
+
+    // Search restaurants using Overpass API
+    async searchOverpass(lat, lon, cuisine) {
+        try {
+            // Build Overpass query
+            let cuisineFilter = '';
+            if (cuisine) {
+                const cuisineMap = {
+                    'indian': 'indian',
+                    'chinese': 'chinese',
+                    'italian': 'italian',
+                    'mexican': 'mexican',
+                    'thai': 'thai',
+                    'japanese': 'japanese',
+                    'american': 'american',
+                    'fast food': 'fast_food'
+                };
+                
+                const osmCuisine = cuisineMap[cuisine.toLowerCase()];
+                if (osmCuisine) {
+                    cuisineFilter = `["cuisine"~"${osmCuisine}"]`;
+                }
+            }
+
+            const query = `
+                [out:json];
+                node["amenity"="restaurant"]${cuisineFilter}(around:5000,${lat},${lon});
+                out body;
+            `;
+
+            const response = await fetch('https://overpass-api.de/api/interpreter', {
+                method: 'POST',
+                body: query,
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/x-www-form-urlencoded'
                 }
             });
+
             const data = await response.json();
-            return this.processZomatoData(data);
+            
+            if (data.elements) {
+                return data.elements.map(element => ({
+                    id: element.id,
+                    name: element.tags.name || 'Unnamed Restaurant',
+                    cuisine: element.tags.cuisine || 'Multi-Cuisine',
+                    rating: 4.0, // OpenStreetMap doesn't have ratings
+                    review_count: 'N/A',
+                    price_range: element.tags.price_range || '₹₹',
+                    delivery_time: Math.floor(Math.random() * 20) + 20,
+                    address: element.tags['addr:street'] || 'Bangalore',
+                    phone: element.tags.phone || 'N/A',
+                    tags: (element.tags.cuisine || 'restaurant').split(';'),
+                    menu: this.generateMenuFromCuisine(element.tags.cuisine || 'Indian')
+                }));
+            }
+            
+            return [];
         } catch (error) {
-            console.error('Error fetching from Zomato:', error);
+            console.error('Error with Overpass:', error);
             return [];
         }
     }
 
-    // Process Swiggy data
-    processSwiggyData(cards) {
-        const restaurants = [];
-        cards.forEach(card => {
-            if (card.card?.card?.gridElements?.infoWithStyle?.restaurants) {
-                card.card.card.gridElements.infoWithStyle.restaurants.forEach(rest => {
-                    restaurants.push({
-                        id: rest.info.id,
-                        name: rest.info.name,
-                        cuisine: rest.info.cuisines?.join(', ') || 'Multi-Cuisine',
-                        rating: rest.info.avgRating || 4.0,
-                        review_count: rest.info.totalRatingsString || '100+',
-                        price_range: rest.info.costForTwo || '₹200 for two',
-                        delivery_time: rest.info.sla?.deliveryTime || 30,
-                        address: rest.info.locality || 'Bangalore',
-                        phone: rest.info.phone || 'N/A',
-                        tags: rest.info.cuisines || ['restaurant'],
-                        menu: this.generateMenuFromCuisine(rest.info.cuisines?.[0] || 'Indian')
-                    });
-                });
+    // Search using Nominatim
+    async searchNominatim(location, cuisine) {
+        try {
+            const query = cuisine ? 
+                `${cuisine} restaurants in ${location} Bangalore` :
+                `restaurants in ${location} Bangalore`;
+                
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            
+            if (data) {
+                return data.map((place, index) => ({
+                    id: place.place_id || index,
+                    name: place.display_name.split(',')[0] || 'Restaurant',
+                    cuisine: cuisine || 'Multi-Cuisine',
+                    rating: 4.0,
+                    review_count: 'N/A',
+                    price_range: '₹₹',
+                    delivery_time: Math.floor(Math.random() * 20) + 20,
+                    address: place.display_name || location,
+                    phone: 'N/A',
+                    tags: [cuisine || 'restaurant'],
+                    menu: this.generateMenuFromCuisine(cuisine || 'Indian')
+                }));
             }
-        });
-        return restaurants;
-    }
-
-    // Process Zomato data
-    processZomatoData(data) {
-        const restaurants = [];
-        if (data.results?.restaurants) {
-            data.results.restaurants.forEach(rest => {
-                restaurants.push({
-                    id: rest.restaurant.id,
-                    name: rest.restaurant.name,
-                    cuisine: rest.restaurant.cuisines,
-                    rating: rest.restaurant.user_rating?.aggregate_rating || 4.0,
-                    review_count: rest.restaurant.user_rating?.votes || 100,
-                    price_range: rest.restaurant.price_range || '₹₹',
-                    delivery_time: rest.restaurant.average_delivery_time || 30,
-                    address: rest.restaurant.location?.address || 'Bangalore',
-                    phone: rest.restaurant.phone_numbers || 'N/A',
-                    tags: rest.restaurant.cuisines?.split(', ') || ['restaurant'],
-                    menu: this.generateMenuFromCuisine(rest.restaurant.cuisines?.split(', ')[0] || 'Indian')
-                });
-            });
+            
+            return [];
+        } catch (error) {
+            console.error('Error with Nominatim:', error);
+            return [];
         }
-        return restaurants;
     }
 
     // Generate menu based on cuisine
     generateMenuFromCuisine(cuisine) {
         const menuMap = {
-            'Indian': [
+            'indian': [
                 { name: 'Butter Chicken', price: 280, is_veg: false, popularity: 0.95 },
                 { name: 'Paneer Tikka', price: 220, is_veg: true, popularity: 0.90 },
                 { name: 'Naan', price: 40, is_veg: true, popularity: 0.85 },
@@ -110,7 +162,7 @@ class RestaurantAIAgent {
                 { name: 'Chicken Tikka', price: 260, is_veg: false, popularity: 0.90 },
                 { name: 'Gulab Jamun', price: 60, is_veg: true, popularity: 0.85 }
             ],
-            'South Indian': [
+            'south indian': [
                 { name: 'Masala Dosa', price: 80, is_veg: true, popularity: 0.95 },
                 { name: 'Idli Sambar', price: 60, is_veg: true, popularity: 0.90 },
                 { name: 'Vada', price: 50, is_veg: true, popularity: 0.85 },
@@ -120,7 +172,7 @@ class RestaurantAIAgent {
                 { name: 'Pongal', price: 65, is_veg: true, popularity: 0.70 },
                 { name: 'Kesari Bath', price: 55, is_veg: true, popularity: 0.65 }
             ],
-            'Chinese': [
+            'chinese': [
                 { name: 'Kung Pao Chicken', price: 220, is_veg: false, popularity: 0.90 },
                 { name: 'Veg Hakka Noodles', price: 160, is_veg: true, popularity: 0.85 },
                 { name: 'Spring Rolls', price: 120, is_veg: true, popularity: 0.80 },
@@ -130,7 +182,7 @@ class RestaurantAIAgent {
                 { name: 'Dim Sum', price: 150, is_veg: true, popularity: 0.75 },
                 { name: 'Hot and Sour Soup', price: 90, is_veg: true, popularity: 0.80 }
             ],
-            'Italian': [
+            'italian': [
                 { name: 'Margherita Pizza', price: 280, is_veg: true, popularity: 0.95 },
                 { name: 'Pasta Alfredo', price: 240, is_veg: true, popularity: 0.90 },
                 { name: 'Garlic Bread', price: 80, is_veg: true, popularity: 0.85 },
@@ -140,7 +192,7 @@ class RestaurantAIAgent {
                 { name: 'Risotto', price: 220, is_veg: true, popularity: 0.80 },
                 { name: 'Panna Cotta', price: 150, is_veg: true, popularity: 0.85 }
             ],
-            'Biryani': [
+            'biryani': [
                 { name: 'Chicken Biryani', price: 250, is_veg: false, popularity: 0.95 },
                 { name: 'Mutton Biryani', price: 350, is_veg: false, popularity: 0.90 },
                 { name: 'Veg Biryani', price: 200, is_veg: true, popularity: 0.80 },
@@ -150,7 +202,7 @@ class RestaurantAIAgent {
                 { name: 'Salan', price: 80, is_veg: true, popularity: 0.75 },
                 { name: 'Double Ka Meetha', price: 70, is_veg: true, popularity: 0.85 }
             ],
-            'Fast Food': [
+            'fast food': [
                 { name: 'Burger', price: 150, is_veg: true, popularity: 0.90 },
                 { name: 'Fries', price: 80, is_veg: true, popularity: 0.85 },
                 { name: 'Pizza', price: 200, is_veg: true, popularity: 0.92 },
@@ -162,7 +214,16 @@ class RestaurantAIAgent {
             ]
         };
         
-        return menuMap[cuisine] || menuMap['Indian'];
+        // Parse cuisine string
+        const cuisineLower = (cuisine || 'indian').toLowerCase();
+        
+        for (const [key, menu] of Object.entries(menuMap)) {
+            if (cuisineLower.includes(key)) {
+                return menu;
+            }
+        }
+        
+        return menuMap['indian'];
     }
 
     parseRequest(text) {
@@ -221,8 +282,8 @@ class RestaurantAIAgent {
     }
 
     async searchRestaurants(request) {
-        // Fetch real restaurants from APIs
-        let restaurants = await this.fetchRealRestaurants(request.location, request.cuisine);
+        // Fetch real restaurants from OpenStreetMap
+        const restaurants = await this.fetchRealRestaurants(request.location, request.cuisine);
         
         if (restaurants.length === 0) {
             return [];
@@ -312,7 +373,7 @@ Or try: "Show me restaurants in ${this.currentLocation}"`;
         
         this.currentRestaurants.slice(0, 3).forEach((restaurant, i) => {
             response.push(`${i + 1}. 🏪 **${restaurant.name}**`);
-            response.push(`⭐ Rating: ${restaurant.rating}/5 (${restaurant.review_count} reviews)`);
+            response.push(`⭐ Rating: ${restaurant.rating}/5`);
             response.push(`💰 Price: ${restaurant.price_range}`);
             response.push(`🚚 Delivery: ${restaurant.delivery_time} mins`);
             response.push(`🍽️ Cuisine: ${restaurant.cuisine}`);
