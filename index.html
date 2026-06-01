@@ -494,14 +494,16 @@
                 html += `<button class="show-more-btn" onclick="showMoreItems(${itemsPerPage}, '${currentRestaurant}', ${JSON.stringify(allItems).replace(/"/g, '&quot;')})">📋 Show More Items (${itemsPerPage}/${allItems.length})</button>`;
             }
             
-            // Add restaurant links
+            // Add restaurant links - ALWAYS SHOW
             const restaurantQuery = encodeURIComponent(currentRestaurant);
-            html += `<div style="margin-top: 15px; text-align: center;">
-                <p><strong>🛒 Order ${currentRestaurant} from:</strong></p>
-                <a href="https://www.swiggy.com/search?query=${restaurantQuery}" class="restaurant-link" target="_blank">🛵 Swiggy</a>
-                <a href="https://www.zomato.com/search?q=${restaurantQuery}" class="restaurant-link" target="_blank">🍽️ Zomato</a>
-                <a href="https://www.ubereats.com" class="restaurant-link" target="_blank">🚗 UberEats</a>
-                <a href="https://www.google.com/search?q=${restaurantQuery}+food+delivery" class="restaurant-link" target="_blank">🔍 Google</a>
+            html += `<div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; text-align: center;">
+                <p style="margin-bottom: 10px; font-weight: bold; color: #333;">🛒 Order ${currentRestaurant} from:</p>
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
+                    <a href="https://www.swiggy.com/search?query=${restaurantQuery}" class="restaurant-link" target="_blank" style="display: inline-block; padding: 8px 16px; background: #667eea; color: white; text-decoration: none; border-radius: 20px; font-size: 14px;">🛵 Swiggy</a>
+                    <a href="https://www.zomato.com/search?q=${restaurantQuery}" class="restaurant-link" target="_blank" style="display: inline-block; padding: 8px 16px; background: #667eea; color: white; text-decoration: none; border-radius: 20px; font-size: 14px;">🍽️ Zomato</a>
+                    <a href="https://www.ubereats.com" class="restaurant-link" target="_blank" style="display: inline-block; padding: 8px 16px; background: #667eea; color: white; text-decoration: none; border-radius: 20px; font-size: 14px;">🚗 UberEats</a>
+                    <a href="https://www.google.com/search?q=${restaurantQuery}+food+delivery" class="restaurant-link" target="_blank" style="display: inline-block; padding: 8px 16px; background: #667eea; color: white; text-decoration: none; border-radius: 20px; font-size: 14px;">🔍 Google</a>
+                </div>
             </div>`;
             
             addMessage(html);
