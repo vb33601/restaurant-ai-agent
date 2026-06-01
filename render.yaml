@@ -8,6 +8,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
     staticPublishPath: .
-    staticRoutes:
-      - path: /
-        target: index.html
+    routes:
+      - type: rewrite
+        source: /
+        destination: /index.html
