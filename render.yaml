@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: restaurant-ai-agent
+    runtime: static
+    buildCommand: echo "Build complete"
+    staticPublishPath: .
+    envVars: []
