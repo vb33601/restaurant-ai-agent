@@ -11,22 +11,25 @@ class RestaurantAIAgent {
         this.currentLocation = 'Whitefield';
     }
 
-    // Fetch real restaurants from Swiggy API
+    // Fetch real restaurants from backend API
     async fetchRealRestaurants(location, cuisine) {
         try {
-            // Use a CORS proxy or direct API
-            const response = await fetch(`https://www.swiggy.com/dapi/restaurants/list/v5?lat=12.9716&lng=77.5946&page_type=DESKTOP_WEB_LISTING`, {
+            // Use our backend API
+            const response = await fetch(`https://restaurant-ai-agent-api.onrender.com/api/restaurants?location=${location}&cuisine=${cuisine}`, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
+                    'Content-Type': 'application/json'
                 }
             });
             const data = await response.json();
-            return this.processSwiggyData(data.data?.cards || []);
+            
+            if (data.success && data.restaurants.length > 0) {
+                return data.restaurants;
+            } else {
+                return [];
+            }
         } catch (error) {
-            console.error('Error fetching from Swiggy:', error);
-            // Try Zomato
-            return this.fetchFromZomato(location, cuisine);
+            console.error('Error fetching restaurants:', error);
+            return [];
         }
     }
 
