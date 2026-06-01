@@ -2,8 +2,33 @@
  * Debug mode: off
 WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
  * Running on all addresses (0.0.0.0)
- * Running on http://127.0.0.1:5003
- * Running on http://192.168.68.109:5003
+ * Running on http://127.0.0.1:5005
+ * Running on http://192.168.68.109:5005
 Press CTRL+C to quit
-127.0.0.1 - - [01/Jun/2026 18:34:10] "GET /api/health HTTP/1.1" 200 -
-127.0.0.1 - - [01/Jun/2026 18:42:12] "GET /api/health HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:56:00] "GET /api/health HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:56:02] "GET /api/restaurants?location=Whitefield HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:56:03] "GET /api/restaurants?location=Koramangala HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:56:37] "GET /api/health HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:56:44] "GET /api/restaurants?location=Whitefield HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:56:46] "GET /api/restaurants?location=Koramangala HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:56:48] "GET /api/restaurants?location=Indiranagar HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:56:49] "GET /api/restaurants?location=MG%20Road HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:56:51] "GET /api/restaurants?location=Whitefield HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:56:51] "GET /api/restaurants?location=Koramangala HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:56:54] "GET /api/restaurants?location=Whitefield&cuisine=North%20Indian HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:56:55] "GET /api/restaurants?location=Whitefield&cuisine=Asian HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:57:30] "GET /api/restaurants?location=Whitefield HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:57:34] "GET /api/restaurants?location=Koramangala HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:57:37] "GET /api/restaurants?location=Whitefield HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:57:37] "GET /api/restaurants?location=Koramangala HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:57:37] "GET /api/restaurants?location=Whitefield HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:57:37] "GET /api/restaurants?location=Koramangala HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:57:39] "GET /api/restaurants?location=Whitefield&cuisine=Asian HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:57:41] "GET /api/restaurants?location=Whitefield HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:57:41] "GET /api/restaurants?location=Koramangala HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:57:41] "GET /api/restaurants?location=Indiranagar HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:57:41] "GET /api/restaurants?location=MG%20Road HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:57:41] "GET /api/restaurants?location=HSR%20Layout HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:57:41] "GET /api/restaurants?location=Electronic%20City HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:57:41] "GET /api/restaurants?location=JP%20Nagar HTTP/1.1" 200 -
+127.0.0.1 - - [01/Jun/2026 18:57:41] "GET /api/restaurants?location=Jayanagar HTTP/1.1" 200 -

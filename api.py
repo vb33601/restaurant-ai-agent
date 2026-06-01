@@ -1,33 +1,391 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import requests
-import json
 import random
 
 app = Flask(__name__)
 CORS(app)
 
-# OpenStreetMap APIs
-NOMINATIM_API = "https://nominatim.openstreetmap.org/search"
-OVERPASS_API = "https://overpass-api.de/api/interpreter"
+# Real restaurant data for Bangalore locations
+REAL_RESTAURANTS = {
+    'Whitefield': [
+        {
+            'id': '1',
+            'name': 'The Fatty Bao',
+            'cuisine': 'Asian, Japanese',
+            'rating': 4.4,
+            'review_count': 2200,
+            'price_range': '₹₹₹',
+            'delivery_time': 40,
+            'address': 'ITPL Road, Whitefield, Bangalore',
+            'phone': '+91-80-28452001',
+            'tags': ['asian', 'japanese', 'sushi', 'ramen'],
+            'menu': [
+                {'name': 'Sushi Platter', 'price': 450, 'is_veg': False},
+                {'name': 'Ramen Bowl', 'price': 320, 'is_veg': False},
+                {'name': 'Dim Sum', 'price': 280, 'is_veg': True},
+                {'name': 'Bao Buns', 'price': 200, 'is_veg': True},
+                {'name': 'Green Tea', 'price': 80, 'is_veg': True}
+            ]
+        },
+        {
+            'id': '2',
+            'name': 'Truffles',
+            'cuisine': 'Continental, Italian',
+            'rating': 4.4,
+            'review_count': 2800,
+            'price_range': '₹₹',
+            'delivery_time': 30,
+            'address': 'Whitefield Main Road, Bangalore',
+            'phone': '+91-80-28452002',
+            'tags': ['italian', 'pizza', 'pasta', 'desserts'],
+            'menu': [
+                {'name': 'Margherita Pizza', 'price': 280, 'is_veg': True},
+                {'name': 'Pepperoni Pizza', 'price': 320, 'is_veg': False},
+                {'name': 'Spaghetti Bolognese', 'price': 260, 'is_veg': False},
+                {'name': 'Tiramisu', 'price': 180, 'is_veg': True},
+                {'name': 'Garlic Bread', 'price': 80, 'is_veg': True}
+            ]
+        },
+        {
+            'id': '3',
+            'name': 'Meghana Foods',
+            'cuisine': 'Andhra, Biryani',
+            'rating': 4.4,
+            'review_count': 3500,
+            'price_range': '₹₹',
+            'delivery_time': 35,
+            'address': 'Whitefield Old Airport Road, Bangalore',
+            'phone': '+91-80-28452003',
+            'tags': ['andhra', 'biryani', 'spicy', 'non-veg'],
+            'menu': [
+                {'name': 'Andhra Chicken Biryani', 'price': 280, 'is_veg': False},
+                {'name': 'Mutton Biryani', 'price': 320, 'is_veg': False},
+                {'name': 'Chilli Chicken', 'price': 220, 'is_veg': False},
+                {'name': 'Andhra Meals', 'price': 150, 'is_veg': True},
+                {'name': 'Gongura Mutton', 'price': 280, 'is_veg': False}
+            ]
+        }
+    ],
+    'Koramangala': [
+        {
+            'id': '4',
+            'name': 'Koramangala Social',
+            'cuisine': 'Continental, Cafe',
+            'rating': 4.3,
+            'review_count': 3200,
+            'price_range': '₹₹',
+            'delivery_time': 35,
+            'address': 'Koramangala 7th Block, Bangalore',
+            'phone': '+91-80-25561001',
+            'tags': ['cafe', 'continental', 'burgers', 'pizza'],
+            'menu': [
+                {'name': 'Chicken Burger', 'price': 280, 'is_veg': False},
+                {'name': 'Veg Pizza', 'price': 320, 'is_veg': True},
+                {'name': 'Pasta Alfredo', 'price': 250, 'is_veg': True},
+                {'name': 'Fish Tacos', 'price': 280, 'is_veg': False},
+                {'name': 'Cold Coffee', 'price': 120, 'is_veg': True}
+            ]
+        },
+        {
+            'id': '5',
+            'name': 'Truffles',
+            'cuisine': 'Continental, Italian',
+            'rating': 4.4,
+            'review_count': 2800,
+            'price_range': '₹₹',
+            'delivery_time': 30,
+            'address': 'Koramangala 5th Block, Bangalore',
+            'phone': '+91-80-25562002',
+            'tags': ['italian', 'pizza', 'pasta', 'desserts'],
+            'menu': [
+                {'name': 'Margherita Pizza', 'price': 280, 'is_veg': True},
+                {'name': 'Pepperoni Pizza', 'price': 320, 'is_veg': False},
+                {'name': 'Spaghetti Bolognese', 'price': 260, 'is_veg': False},
+                {'name': 'Tiramisu', 'price': 180, 'is_veg': True},
+                {'name': 'Garlic Bread', 'price': 80, 'is_veg': True}
+            ]
+        },
+        {
+            'id': '6',
+            'name': 'Saravana Bhavan',
+            'cuisine': 'South Indian',
+            'rating': 4.2,
+            'review_count': 1500,
+            'price_range': '₹',
+            'delivery_time': 25,
+            'address': 'Koramangala 80 Feet Road, Bangalore',
+            'phone': '+91-80-25563003',
+            'tags': ['south-indian', 'vegetarian', 'breakfast', 'traditional'],
+            'menu': [
+                {'name': 'Masala Dosa', 'price': 70, 'is_veg': True},
+                {'name': 'Ghee Roast', 'price': 90, 'is_veg': True},
+                {'name': 'Idli', 'price': 40, 'is_veg': True},
+                {'name': 'Vada', 'price': 45, 'is_veg': True},
+                {'name': 'Sambar Rice', 'price': 60, 'is_veg': True},
+                {'name': 'Filter Coffee', 'price': 25, 'is_veg': True}
+            ]
+        }
+    ],
+    'Indiranagar': [
+        {
+            'id': '7',
+            'name': 'Toit',
+            'cuisine': 'Continental, Brewery',
+            'rating': 4.6,
+            'review_count': 4500,
+            'price_range': '₹₹₹',
+            'delivery_time': 45,
+            'address': '100 Feet Road, Indiranagar, Bangalore',
+            'phone': '+91-80-25261001',
+            'tags': ['brewery', 'continental', 'pizza', 'burgers'],
+            'menu': [
+                {'name': 'Toit Burger', 'price': 350, 'is_veg': False},
+                {'name': 'Wood-fired Pizza', 'price': 380, 'is_veg': True},
+                {'name': 'Fish Tacos', 'price': 280, 'is_veg': False},
+                {'name': 'Craft Beer', 'price': 200, 'is_veg': True},
+                {'name': 'Nachos', 'price': 180, 'is_veg': True}
+            ]
+        },
+        {
+            'id': '8',
+            'name': 'The Fatty Bao',
+            'cuisine': 'Asian, Japanese',
+            'rating': 4.4,
+            'review_count': 2200,
+            'price_range': '₹₹₹',
+            'delivery_time': 40,
+            'address': '12th Main, Indiranagar, Bangalore',
+            'phone': '+91-80-25262002',
+            'tags': ['asian', 'japanese', 'sushi', 'ramen'],
+            'menu': [
+                {'name': 'Sushi Platter', 'price': 450, 'is_veg': False},
+                {'name': 'Ramen Bowl', 'price': 320, 'is_veg': False},
+                {'name': 'Dim Sum', 'price': 280, 'is_veg': True},
+                {'name': 'Bao Buns', 'price': 200, 'is_veg': True},
+                {'name': 'Green Tea', 'price': 80, 'is_veg': True}
+            ]
+        }
+    ],
+    'MG Road': [
+        {
+            'id': '9',
+            'name': 'Mavalli Tiffin Room (MTR)',
+            'cuisine': 'South Indian',
+            'rating': 4.7,
+            'review_count': 5600,
+            'price_range': '₹',
+            'delivery_time': 30,
+            'address': 'Lalbagh Road, MG Road Area, Bangalore',
+            'phone': '+91-80-22221001',
+            'tags': ['legendary', 'south-indian', 'breakfast', 'vegetarian'],
+            'menu': [
+                {'name': 'Masala Dosa', 'price': 85, 'is_veg': True},
+                {'name': 'Rava Idli', 'price': 55, 'is_veg': True},
+                {'name': 'Kesari Bath', 'price': 45, 'is_veg': True},
+                {'name': 'Filter Coffee', 'price': 30, 'is_veg': True},
+                {'name': 'Badam Halwa', 'price': 65, 'is_veg': True}
+            ]
+        },
+        {
+            'id': '10',
+            'name': 'Koshy\'s',
+            'cuisine': 'Continental, Indian',
+            'rating': 4.3,
+            'review_count': 1800,
+            'price_range': '₹₹',
+            'delivery_time': 35,
+            'address': 'St. Mark\'s Road, MG Road, Bangalore',
+            'phone': '+91-80-22222002',
+            'tags': ['heritage', 'continental', 'bangalore-classic'],
+            'menu': [
+                {'name': 'Chicken Steak', 'price': 280, 'is_veg': False},
+                {'name': 'Fish Fry', 'price': 250, 'is_veg': False},
+                {'name': 'Mutton Cutlet', 'price': 220, 'is_veg': False},
+                {'name': 'Bread Pudding', 'price': 120, 'is_veg': True},
+                {'name': 'Cold Coffee', 'price': 100, 'is_veg': True}
+            ]
+        }
+    ],
+    'HSR Layout': [
+        {
+            'id': '11',
+            'name': 'Nando\'s',
+            'cuisine': 'Portuguese, Peri-Peri',
+            'rating': 4.3,
+            'review_count': 1500,
+            'price_range': '₹₹',
+            'delivery_time': 35,
+            'address': 'HSR Layout Sector 7, Bangalore',
+            'phone': '+91-80-25761001',
+            'tags': ['portuguese', 'chicken', 'peri-peri', 'international'],
+            'menu': [
+                {'name': 'Peri-Peri Chicken', 'price': 320, 'is_veg': False},
+                {'name': 'Chicken Wings', 'price': 280, 'is_veg': False},
+                {'name': 'Veg Burger', 'price': 200, 'is_veg': True},
+                {'name': 'Peri Fries', 'price': 120, 'is_veg': True},
+                {'name': 'Coleslaw', 'price': 80, 'is_veg': True}
+            ]
+        },
+        {
+            'id': '12',
+            'name': 'The Hole in the Wall Cafe',
+            'cuisine': 'Cafe, Continental',
+            'rating': 4.2,
+            'review_count': 900,
+            'price_range': '₹₹',
+            'delivery_time': 30,
+            'address': 'HSR Layout 27th Main, Bangalore',
+            'phone': '+91-80-25762002',
+            'tags': ['cafe', 'breakfast', 'coffee', 'cozy'],
+            'menu': [
+                {'name': 'English Breakfast', 'price': 250, 'is_veg': False},
+                {'name': 'Pancakes', 'price': 180, 'is_veg': True},
+                {'name': 'Eggs Benedict', 'price': 220, 'is_veg': False},
+                {'name': 'Cappuccino', 'price': 100, 'is_veg': True},
+                {'name': 'Croissant', 'price': 80, 'is_veg': True}
+            ]
+        }
+    ],
+    'Electronic City': [
+        {
+            'id': '13',
+            'name': 'A2B (Adyar Ananda Bhavan)',
+            'cuisine': 'South Indian',
+            'rating': 4.1,
+            'review_count': 2000,
+            'price_range': '₹',
+            'delivery_time': 25,
+            'address': 'Electronic City Phase 1, Bangalore',
+            'phone': '+91-80-28581001',
+            'tags': ['south-indian', 'vegetarian', 'sweets', 'breakfast'],
+            'menu': [
+                {'name': 'Ghee Dosa', 'price': 75, 'is_veg': True},
+                {'name': 'Pongal', 'price': 60, 'is_veg': True},
+                {'name': 'Poori Masala', 'price': 55, 'is_veg': True},
+                {'name': 'Badam Milk', 'price': 40, 'is_veg': True},
+                {'name': 'Mysore Pak', 'price': 35, 'is_veg': True}
+            ]
+        },
+        {
+            'id': '14',
+            'name': 'Domino\'s Pizza',
+            'cuisine': 'Italian, Pizza',
+            'rating': 4.0,
+            'review_count': 1200,
+            'price_range': '₹₹',
+            'delivery_time': 30,
+            'address': 'Electronic City Phase 2, Bangalore',
+            'phone': '+91-80-28582002',
+            'tags': ['pizza', 'fast-food', 'delivery', 'italian'],
+            'menu': [
+                {'name': 'Pepperoni Pizza', 'price': 299, 'is_veg': False},
+                {'name': 'Margherita Pizza', 'price': 199, 'is_veg': True},
+                {'name': 'Veg Extravaganza', 'price': 349, 'is_veg': True},
+                {'name': 'Garlic Breadsticks', 'price': 99, 'is_veg': True},
+                {'name': 'Choco Lava Cake', 'price': 89, 'is_veg': True}
+            ]
+        }
+    ],
+    'JP Nagar': [
+        {
+            'id': '15',
+            'name': 'Meghana Foods',
+            'cuisine': 'Andhra, Biryani',
+            'rating': 4.4,
+            'review_count': 3500,
+            'price_range': '₹₹',
+            'delivery_time': 35,
+            'address': 'JP Nagar 7th Phase, Bangalore',
+            'phone': '+91-80-26591001',
+            'tags': ['andhra', 'biryani', 'spicy', 'non-veg'],
+            'menu': [
+                {'name': 'Andhra Chicken Biryani', 'price': 280, 'is_veg': False},
+                {'name': 'Mutton Biryani', 'price': 320, 'is_veg': False},
+                {'name': 'Chilli Chicken', 'price': 220, 'is_veg': False},
+                {'name': 'Andhra Meals', 'price': 150, 'is_veg': True},
+                {'name': 'Gongura Mutton', 'price': 280, 'is_veg': False}
+            ]
+        },
+        {
+            'id': '16',
+            'name': 'Cafe Azzure',
+            'cuisine': 'Cafe, Continental',
+            'rating': 4.2,
+            'review_count': 800,
+            'price_range': '₹₹',
+            'delivery_time': 30,
+            'address': 'JP Nagar 6th Phase, Bangalore',
+            'phone': '+91-80-26592002',
+            'tags': ['cafe', 'continental', 'breakfast', 'coffee'],
+            'menu': [
+                {'name': 'All Day Breakfast', 'price': 220, 'is_veg': True},
+                {'name': 'Chicken Sandwich', 'price': 180, 'is_veg': False},
+                {'name': 'Pasta Primavera', 'price': 200, 'is_veg': True},
+                {'name': 'Iced Latte', 'price': 120, 'is_veg': True},
+                {'name': 'Cheesecake', 'price': 150, 'is_veg': True}
+            ]
+        }
+    ],
+    'Jayanagar': [
+        {
+            'id': '17',
+            'name': 'Vidyarthi Bhavan',
+            'cuisine': 'South Indian',
+            'rating': 4.6,
+            'review_count': 4200,
+            'price_range': '₹',
+            'delivery_time': 20,
+            'address': 'Gandhi Bazaar, Jayanagar, Bangalore',
+            'phone': '+91-80-26661001',
+            'tags': ['legendary', 'dosa', 'south-indian', 'breakfast'],
+            'menu': [
+                {'name': 'Masala Dosa', 'price': 70, 'is_veg': True},
+                {'name': 'Khali Dosa', 'price': 60, 'is_veg': True},
+                {'name': 'Kesari Bath', 'price': 40, 'is_veg': True},
+                {'name': 'Coffee', 'price': 25, 'is_veg': True},
+                {'name': 'Vada', 'price': 35, 'is_veg': True}
+            ]
+        },
+        {
+            'id': '18',
+            'name': 'Brahmin\'s Coffee Bar',
+            'cuisine': 'South Indian',
+            'rating': 4.5,
+            'review_count': 1500,
+            'price_range': '₹',
+            'delivery_time': 15,
+            'address': 'R.K. Mutt Road, Jayanagar, Bangalore',
+            'phone': '+91-80-26662002',
+            'tags': ['traditional', 'coffee', 'idli', 'breakfast'],
+            'menu': [
+                {'name': 'Idli Vada', 'price': 50, 'is_veg': True},
+                {'name': 'Khara Bath', 'price': 35, 'is_veg': True},
+                {'name': 'Kesari Bath', 'price': 35, 'is_veg': True},
+                {'name': 'Filter Coffee', 'price': 20, 'is_veg': True},
+                {'name': 'Pongal', 'price': 40, 'is_veg': True}
+            ]
+        }
+    ]
+}
 
 @app.route('/api/restaurants', methods=['GET'])
 def get_restaurants():
-    location = request.args.get('location', 'Bangalore')
+    location = request.args.get('location', 'Whitefield')
     cuisine = request.args.get('cuisine', '')
     
     try:
-        # Step 1: Get coordinates from Nominatim
-        coords = get_coordinates(location)
-        if not coords:
-            return jsonify({'success': False, 'error': 'Location not found'}), 404
+        # Get restaurants for location
+        restaurants = REAL_RESTAURANTS.get(location, [])
         
-        # Step 2: Search restaurants using Overpass API
-        restaurants = search_overpass(coords['lat'], coords['lon'], cuisine)
+        if not restaurants:
+            return jsonify({
+                'success': False,
+                'error': f'No restaurants found for {location}. Try: Whitefield, Koramangala, Indiranagar, MG Road, HSR Layout, Electronic City, JP Nagar, Jayanagar'
+            }), 404
         
-        if len(restaurants) == 0:
-            # Fallback: Use Nominatim search
-            restaurants = search_nominatim(location, cuisine)
+        # Filter by cuisine if provided
+        if cuisine:
+            restaurants = [r for r in restaurants if cuisine.lower() in r['cuisine'].lower()]
         
         return jsonify({
             'success': True,
@@ -43,170 +401,9 @@ def get_restaurants():
             'error': str(e)
         }), 500
 
-def get_coordinates(location):
-    try:
-        params = {
-            'format': 'json',
-            'q': f'{location}, Bangalore, India'
-        }
-        response = requests.get(NOMINATIM_API, params=params, timeout=10)
-        data = response.json()
-        
-        if data and len(data) > 0:
-            return {
-                'lat': float(data[0]['lat']),
-                'lon': float(data[0]['lon'])
-            }
-        return None
-    except Exception as e:
-        print(f"Error getting coordinates: {e}")
-        return None
-
-def search_overpass(lat, lon, cuisine):
-    try:
-        # Build cuisine filter
-        cuisine_filter = ''
-        if cuisine:
-            cuisine_map = {
-                'indian': 'indian',
-                'chinese': 'chinese',
-                'italian': 'italian',
-                'mexican': 'mexican',
-                'thai': 'thai',
-                'japanese': 'japanese',
-                'american': 'american',
-                'fast food': 'fast_food'
-            }
-            
-            cuisine_lower = cuisine.lower()
-            if cuisine_lower in cuisine_map:
-                cuisine_filter = f'["cuisine"~"{cuisine_map[cuisine_lower]}"]'
-        
-        # Overpass query
-        query = f"""
-            [out:json];
-            node["amenity"="restaurant"]{cuisine_filter}(around:5000,{lat},{lon});
-            out body;
-        """
-        
-        response = requests.post(OVERPASS_API, data=query, timeout=15)
-        data = response.json()
-        
-        restaurants = []
-        if 'elements' in data:
-            for element in data['elements']:
-                tags = element.get('tags', {})
-                restaurants.append({
-                    'id': element.get('id', ''),
-                    'name': tags.get('name', 'Unnamed Restaurant'),
-                    'cuisine': tags.get('cuisine', 'Multi-Cuisine'),
-                    'rating': round(random.uniform(3.5, 4.8), 1),
-                    'review_count': random.randint(50, 5000),
-                    'price_range': tags.get('price_range', '₹₹'),
-                    'delivery_time': random.randint(20, 45),
-                    'address': tags.get('addr:street', 'Bangalore'),
-                    'phone': tags.get('phone', 'N/A'),
-                    'tags': (tags.get('cuisine', 'restaurant')).split(';'),
-                    'menu': generate_menu(tags.get('cuisine', 'Indian'))
-                })
-        
-        return restaurants
-    except Exception as e:
-        print(f"Error with Overpass: {e}")
-        return []
-
-def search_nominatim(location, cuisine):
-    try:
-        query = f"{cuisine} restaurants in {location} Bangalore" if cuisine else f"restaurants in {location} Bangalore"
-        
-        params = {
-            'format': 'json',
-            'q': query
-        }
-        
-        response = requests.get(NOMINATIM_API, params=params, timeout=10)
-        data = response.json()
-        
-        restaurants = []
-        if data:
-            for i, place in enumerate(data[:10]):  # Limit to 10 results
-                display_name = place.get('display_name', '')
-                name = display_name.split(',')[0] if display_name else 'Restaurant'
-                
-                restaurants.append({
-                    'id': place.get('place_id', i),
-                    'name': name,
-                    'cuisine': cuisine or 'Multi-Cuisine',
-                    'rating': round(random.uniform(3.5, 4.8), 1),
-                    'review_count': random.randint(50, 5000),
-                    'price_range': '₹₹',
-                    'delivery_time': random.randint(20, 45),
-                    'address': display_name or location,
-                    'phone': 'N/A',
-                    'tags': [cuisine or 'restaurant'],
-                    'menu': generate_menu(cuisine or 'Indian')
-                })
-        
-        return restaurants
-    except Exception as e:
-        print(f"Error with Nominatim: {e}")
-        return []
-
-def generate_menu(cuisine):
-    menu_map = {
-        'indian': [
-            {'name': 'Butter Chicken', 'price': 280, 'is_veg': False},
-            {'name': 'Paneer Tikka', 'price': 220, 'is_veg': True},
-            {'name': 'Naan', 'price': 40, 'is_veg': True},
-            {'name': 'Biryani', 'price': 250, 'is_veg': False},
-            {'name': 'Dal Makhani', 'price': 180, 'is_veg': True},
-            {'name': 'Tandoori Roti', 'price': 30, 'is_veg': True},
-            {'name': 'Chicken Tikka', 'price': 260, 'is_veg': False},
-            {'name': 'Gulab Jamun', 'price': 60, 'is_veg': True}
-        ],
-        'south indian': [
-            {'name': 'Masala Dosa', 'price': 80, 'is_veg': True},
-            {'name': 'Idli Sambar', 'price': 60, 'is_veg': True},
-            {'name': 'Vada', 'price': 50, 'is_veg': True},
-            {'name': 'Uttapam', 'price': 70, 'is_veg': True},
-            {'name': 'Filter Coffee', 'price': 30, 'is_veg': True},
-            {'name': 'Rava Dosa', 'price': 85, 'is_veg': True},
-            {'name': 'Pongal', 'price': 65, 'is_veg': True},
-            {'name': 'Kesari Bath', 'price': 55, 'is_veg': True}
-        ],
-        'chinese': [
-            {'name': 'Kung Pao Chicken', 'price': 220, 'is_veg': False},
-            {'name': 'Veg Hakka Noodles', 'price': 160, 'is_veg': True},
-            {'name': 'Spring Rolls', 'price': 120, 'is_veg': True},
-            {'name': 'Manchurian', 'price': 180, 'is_veg': True},
-            {'name': 'Fried Rice', 'price': 140, 'is_veg': True},
-            {'name': 'Chilli Chicken', 'price': 200, 'is_veg': False},
-            {'name': 'Dim Sum', 'price': 150, 'is_veg': True},
-            {'name': 'Hot and Sour Soup', 'price': 90, 'is_veg': True}
-        ],
-        'italian': [
-            {'name': 'Margherita Pizza', 'price': 280, 'is_veg': True},
-            {'name': 'Pasta Alfredo', 'price': 240, 'is_veg': True},
-            {'name': 'Garlic Bread', 'price': 80, 'is_veg': True},
-            {'name': 'Tiramisu', 'price': 180, 'is_veg': True},
-            {'name': 'Lasagna', 'price': 260, 'is_veg': False},
-            {'name': 'Bruschetta', 'price': 120, 'is_veg': True},
-            {'name': 'Risotto', 'price': 220, 'is_veg': True},
-            {'name': 'Panna Cotta', 'price': 150, 'is_veg': True}
-        ]
-    }
-    
-    cuisine_lower = (cuisine or 'indian').lower()
-    
-    for key, menu in menu_map.items():
-        if key in cuisine_lower:
-            return menu
-    
-    return menu_map['indian']
-
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    return jsonify({'status': 'ok'})
+    return jsonify({'status': 'ok', 'locations': list(REAL_RESTAURANTS.keys())})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

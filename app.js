@@ -9,7 +9,7 @@ class RestaurantAIAgent {
         this.currentOrder = null;
         this.userRequest = null;
         this.currentLocation = 'Whitefield';
-        this.apiUrl = 'http://localhost:5003';
+        this.apiUrl = window.location.origin.includes('localhost') ? 'http://localhost:5005' : window.location.origin;
     }
 
     // Fetch real restaurants from backend API
