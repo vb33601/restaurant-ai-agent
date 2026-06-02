@@ -131,6 +131,8 @@ out body;
         ]
         address = ', '.join(p for p in address_parts if p) or location
         website = tags.get('website') or tags.get('contact:website', '')
+        if website and not website.startswith(('http://', 'https://')):
+            website = 'https://' + website
         phone = tags.get('phone') or tags.get('contact:phone', '')
         opening_hours = tags.get('opening_hours', '')
 
