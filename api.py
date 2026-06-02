@@ -73,17 +73,19 @@ def search_osm_restaurants(location: str, cuisine: str = '') -> list:
         lat_km = (north - south) * 111
         lon_km = (east  - west)  * 111 * abs(lat) / 90
         diagonal_km = (lat_km ** 2 + lon_km ** 2) ** 0.5
-        if diagonal_km >= 8:
-            area_filter = f'({south},{west},{north},{east})'
-        else:
+        if diagonal_km < 8:
             area_filter = f'(around:8000,{lat},{lon})'
+        elif diagonal_km > 200:
+            area_filter = f'(around:50000,{lat},{lon})'
+        else:
+            area_filter = f'({south},{west},{north},{east})'
     else:
         area_filter = f'(around:8000,{lat},{lon})'
 
     def _overpass(cf: str = '') -> list:
         cuisine_filter = f'["cuisine"~"{cf}",i]' if cf else ''
         q = f"""
-[out:json][timeout:60];
+[out:json][timeout:55];
 (
   node["amenity"="restaurant"]{cuisine_filter}{area_filter};
   way["amenity"="restaurant"]{cuisine_filter}{area_filter};
@@ -97,7 +99,7 @@ out body;
         try:
             resp = http_requests.post(
                 'https://overpass-api.de/api/interpreter',
-                data={'data': q}, timeout=60, headers=headers,
+                data={'data': q}, timeout=58, headers=headers,
             )
             return resp.json().get('elements', [])
         except Exception as e:

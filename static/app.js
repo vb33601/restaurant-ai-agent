@@ -325,21 +325,37 @@ class RestaurantAIAgent {
 
         let data;
         try {
-            const resp = await fetch(`/api/restaurants?${params}`);
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 90000);
+            const resp = await fetch(`/api/restaurants?${params}`, { signal: controller.signal });
+            clearTimeout(timer);
             data = await resp.json();
         } catch (err) {
-            return '❌ Network error — please check your connection and try again.';
+            const loc  = encodeURIComponent(this.userRequest.location);
+            const cui  = encodeURIComponent(this.userRequest.cuisine || 'restaurants');
+            return (
+                `⏱️ The search timed out or failed for **${this.userRequest.location}**.\n\n` +
+                `This sometimes happens for very large areas (countries/continents). ` +
+                `Try a specific city instead — e.g. **"sushi in Rome"** instead of "sushi in Italy".\n\n` +
+                `**Search directly on:**\n` +
+                `• [🗺️ Google Maps](https://www.google.com/maps/search/${cui}+in+${loc})\n` +
+                `• [🍽️ Zomato](https://www.zomato.com/search?q=${cui}+${loc})\n` +
+                `• [🛵 Swiggy](https://www.swiggy.com/search?query=${cui})\n` +
+                `• [🔍 Google](https://www.google.com/search?q=${cui}+restaurants+${loc})`
+            );
         }
 
         if (!data.success || !data.restaurants || !data.restaurants.length) {
+            const loc = encodeURIComponent(this.userRequest.location);
+            const cui = encodeURIComponent(this.userRequest.cuisine || 'restaurants');
             const err = data.error || 'No restaurants found.';
             return (
                 `❌ ${err}\n\n` +
-                '**Try:**\n' +
-                '• A different neighbourhood or city name\n' +
-                '• Broader search without cuisine filter\n' +
-                `• [🌍 Google Maps](https://www.google.com/maps/search/restaurants+near+${encodeURIComponent(this.userRequest.location)})\n` +
-                `• [🍽️ Zomato](https://www.zomato.com/search?q=${encodeURIComponent(this.userRequest.location)})`
+                `**Search directly on:**\n` +
+                `• [🗺️ Google Maps](https://www.google.com/maps/search/${cui}+in+${loc})\n` +
+                `• [🍽️ Zomato](https://www.zomato.com/search?q=${cui}+${loc})\n` +
+                `• [🛵 Swiggy](https://www.swiggy.com/search?query=${cui})\n` +
+                `• [🔍 Google](https://www.google.com/search?q=${cui}+restaurants+${loc})`
             );
         }
 
