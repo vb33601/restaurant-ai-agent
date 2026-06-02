@@ -51,7 +51,7 @@ def search_osm_restaurants(location: str, cuisine: str = '') -> list:
 
     geo_url = (
         'https://nominatim.openstreetmap.org/search'
-        f'?q={quote(location + ", India")}&format=json&limit=1&countrycodes=in'
+        f'?q={quote(location)}&format=json&limit=1'
     )
     try:
         geo_resp = http_requests.get(geo_url, timeout=10, headers=headers)
